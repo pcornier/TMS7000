@@ -1,0 +1,1904 @@
+
+.ORG 0x0
+.ORG MISCFUN
+
+.ORG 0x10
+.ORG DOPFUN
+
+.ORG 0x20
+.ORG SOPFUNS
+.ORG SOPFUNN
+
+.ORG 0x30
+.ORG SHRRET
+
+.ORG 0xF0
+.ORG DOPFUNP
+.ORG LAFUN
+
+.ORG 0x40
+.ORG GROUP
+
+.ORG 0x80
+.ORG SHRRF
+.ORG SHRIMM
+
+// **** INSTRUCTION ACQUISITION SEQUENCE ****
+
+.ORG 0x0
+.ORG IAQ0
+    PCH>AH,
+    P>AL,
+    PCL>P,
+    Z>N,
+    PADDN,ONECI,
+    O>PCL,
+    MCNT,MR,
+    IAQ,
+    JUNC(IAQ1);
+
+.ORG 0x36
+.ORG IAQ1
+    DC>AH,
+    DC>AL,
+    PCH>P,
+    Z>N,
+    PADDN,UCI,
+    O>PCH,
+    MR,MD>IR,
+    IAQ,
+    INT(INT0,IAQ2);
+
+.ORG 0xE0
+.ORG IAQ2
+    Z>AH,
+    ONE>AL,
+    AL>P,
+    Z>N,
+    PADDN,ZCI,
+    O>MAL,
+    MR,MD>T,
+    IRH(GROUP);
+
+
+// **** ADDRESSING MODES ENTERED FROM GROUP DECISION ****
+
+.ORG 0x4D
+.ORG BTOA0
+    Z>AH,
+    Z>AL,
+    AL>P,
+    Z>N,
+    PADDN,ZCI,
+    O>MAL,
+    MR,
+    IRL(DOPFUN);
+
+// **** REGS FILE TO A REG ADDRESSING MODE (RX,A)
+
+.ORG 0x43
+.ORG RFTOA0
+    PCH>AH,
+    P>AL,
+    PCL>P,
+    Z>N,
+    PADDN,ONECI,
+    O>PCL,
+    MCNT, MR,
+    JUNC(RFTOA1);
+
+
+.ORG 0x84
+.ORG RFTOA1
+    DC>AH,
+    DC>AL,
+    PCH>P,
+    Z>N,
+    PADDN,UCI,
+    O>PCH,
+    MR,
+    IRH(SHRRF);
+
+
+.ORG 0x83
+.ORG RFTOA2
+    Z>AH,
+    P>AL,
+    MD>P,
+    Z>N,
+    PADDN,ZCI,
+    O>MAL,
+    MR,MD>T,
+    JUNC(BTOA0);
+
+// **** REGS FILE TO B REG ADDRESSING MODE (RX,B)
+
+.ORG 0x47
+.ORG RFTOB0
+    PCH>AH,
+    P>AL,
+    PCL>P,
+    Z>N,
+    PADDN,ONECI,
+    O>PCL,
+    MCNT,MR,
+    JUNC(RFTOA1);
+
+// RFTOB1 IS EQUATED TO RFTOA1
+
+.ORG 0x87
+.ORG RFTOB2
+    Z>AH,
+    P>AL,
+    MD>P,
+    Z>N,
+    PADDN,ZCI,
+    O>MAL,
+    MR,MD>T,
+    JUNC(ITOB2);
+
+// RFTOB3 IS EQUATED TO ITOB2
+
+// **** REGS FILE TO REGS FILE ADDRESSING MODE (RX,RX)
+
+.ORG 0x49
+.ORG RFTORF0
+    PCH>AH,
+    P>AL,
+    PCL>P,
+    Z>N,
+    PADDN,ONECI,
+    O>PCL,
+    MCNT,MR,
+    JUNC(RFTOA1);
+
+// RFTORF1 IS EQUATED TO RFTOA1
+
+.ORG 0x89
+.ORG RFTORF2
+    Z>AH,
+    P>AL,
+    MD>P,
+    Z>N,
+    PADDN,ZCI,
+    O>MAL,
+    MR,MD>T,
+    JUNC(ITORF2);
+
+// RFTORF3 IS EQUATED TO ITORF2
+// RFTORF4 IS EQUATED TO ITORF3
+// RFTORF5 IS EQUATED TO ITORF4
+
+// **** IMMEDIATE OP TO A REG. ADDRESSING MODE (%>XX,A)
+
+.ORG 0x45
+.ORG ITOA0
+    PCH>AH,
+    P>AL,
+    PCL>P,
+    Z>N,
+    PADDN,ONECI,
+    O>PCL,
+    MCNT,MR,
+    JUNC(ITOA1);
+
+.ORG 0x9F
+.ORG ITOA1
+    DC>AH,
+    DC>AL,
+    PCH>P,
+    Z>N,
+    PADDN,UCI,
+    O>PCH,
+    MR,MD>T,
+    IRH(SHRIMM);
+
+.ORG 0x85
+.ORG ITOA2
+    Z>AH,
+    Z>AL,
+    Z>P,
+    Z>N,
+    PADDN,ZCI,
+    O>MAL,
+    MR,
+    IRL(DOPFUN);
+
+
+// **** IMMEDIATE OPERAND TO B REG ADDRESSING MODE (%>XX,B)
+
+.ORG 0x4B
+.ORG ITOB0
+    PCH>AH,
+    P>AL,
+    PCL>P,
+    Z>N,
+    PADDN,ONECI,
+    O>PCL,
+    MCNT,MR,
+    JUNC(ITOA1);
+
+// ITOB1 IS EQUATED TO ITOA1 TO COMPLETE IMM FETCH
+
+.ORG 0x8B
+.ORG ITOB2
+    Z>AH,
+    ONE>AL,
+    AL>P,
+    Z>N,
+    PADDN,ZCI,
+    O>MAL,
+    MR,
+    IRL(DOPFUN);
+
+
+// IMMEDIATE OPERAND TO REGS FILE ADDRESSING MODE (%>XX,RX)
+
+.ORG 0x4F
+.ORG ITORF0
+    PCH>AH,
+    P>AL,
+    PCL>P,
+    Z>N,
+    PADDN,ONECI,
+    O>PCL,
+    MCNT,MR,
+    JUNC(ITOA1);
+
+// ITORF1 IS EQUATED TO ITOA1
+
+.ORG 0x8F
+.ORG ITORF2
+    PCH>AH,
+    P>AL,
+    PCL>P,
+    Z>N,
+    PADDN,ONECI,
+    O>PCL,
+    MCNT,MR,
+    JUNC(ITORF3);
+
+.ORG 0x81
+.ORG ITORF3
+    DC>AH,
+    DC>AL,
+    PCH>P,
+    Z>N,
+    PADDN,UCI,
+    O>PCH,
+    MR,
+    JUNC(ITORF4);
+
+
+.ORG 0x86
+.ORG ITORF4
+    Z>AH,
+    P>AL,
+    MD>P,
+    Z>N,
+    PADDN,ZCI,
+    O>MAL,
+    MR,
+    IRL(DOPFUN);
+
+
+// **** SINGLE OPERAND ADDR MODE ON A REG FOR NORMAL OPS
+
+.ORG 0x57
+.ORG SGLA0
+    Z>AH,
+    Z>AL,
+    Z>P,
+    Z>N,
+    PADDN,ZCI,
+    O>MAL,
+    MR,MD>T,
+    IRL(SOPFUNN);
+
+// **** SINGLE OPERAND ADDR MODE ON B REG FOR NORMAL OPS
+
+.ORG 0x59
+.ORG SGLB0
+    Z>AH,
+    ONE>AL,
+    AL>P,
+    Z>N,
+    PADDN,ZCI,
+    O>MAL,
+    MR,MD>T,
+    IRL(SOPFUNN);
+
+// **** SINGLE OPERAND ADDR MODE ON REGS FILE FOR NORMAL OPS
+
+.ORG 0x5B
+.ORG SGLRF0
+    PCH>AH,
+    P>AL,
+    PCL>P,
+    Z>N,
+    PADDN,ONECI,
+    O>PCL,
+    MCNT,MR,
+    JUNC(RFTOA1);
+
+// SGLRF1 IS EQUATED TO RFTOA1
+
+.ORG 0x9B
+.ORG SGLRF2
+    Z>AH,
+    P>AL,
+    MD>P,
+    Z>N,
+    PADDN,ZCI,
+    O>MAL,
+    MR,MD>T,
+    IRL(SOPFUNN);
+
+// **** SINGLE OPERAND ADDR MODE ON A REG FOR SPECIAL OPS
+
+.ORG 0x56
+.ORG SGLAS0
+    Z>AH,
+    Z>AL,
+    Z>P,
+    Z>N,
+    PADDN,ZCI,
+    O>MAL,
+    MR,
+    IRL(SOPFUNS);
+
+// **** SINGLE OPERAND ADDR MODE ON B REG FOR SPECIAL OPS
+
+.ORG 0x58
+.ORG SGLBS0
+    Z>AH,
+    ONE>AL,
+    AL>P,
+    Z>N,
+    PADDN,ZCI,
+    O>MAL,
+    MR,
+    IRL(SOPFUNS);
+
+// **** SINGLE OPERAND ADDR MODE ON REGS FILE FOR SPECIAL OPS
+
+.ORG 0x5A
+.ORG SGLRFS0
+    PCH>AH,
+    P>AL,
+    PCL>P,
+    Z>N,
+    PADDN,ONECI,
+    O>PCL,
+    MCNT, MR,
+    JUNC(RFTOA1);
+
+// SGLRFS1 IS EQUATGED TO RFTOA1
+
+.ORG 0x9A
+.ORG SGLRFS2
+    Z>AH,
+    P>AL,
+    MD>P,
+    Z>N,
+    PADDN,ZCI,
+    O>MAL,
+    MR,
+    IRL(SOPFUNS);
+
+// **** LONG ADDRESSING MODE INDIRECT THROUGH REGS FILE (*RX)
+
+.ORG 0x53
+.ORG INDTOA0
+    PCH>AH,
+    P>AL,
+    PCL>P,
+    Z>N,
+    PADDN,ONECI,
+    O>PCL,
+    MCNT,MR,
+    JUNC(RFTOA1);
+
+// INDTOA1 IS EQUATED TO RFTOA1
+
+.ORG 0x93
+.ORG INDTOA2
+    Z>AH,
+    P>AL,
+    MD>P,
+    Z>N,
+    PSUBN,ZCI,
+    O>MAL,
+    MR,MD>T,
+    JUNC(INDTOA3);
+
+.ORG 0x97
+.ORG INDTOA3
+    Z>AH,
+    MAL>AL,
+    Z>P,
+    T>N,
+    PADDN,ZCI,
+    O>MAL,
+    MR,MD>T,
+    IRL(LAFUN);
+
+// **** DIRECT TWO BYTE LONG ADDRESSING MODE (@LABEL)
+
+.ORG 0x51
+.ORG DIRTOA0
+    PCH>AH,
+    P>AL,
+    PCL>P,
+    Z>N,
+    PADDN,ONECI,
+    O>PCL,
+    MCNT,MR,
+    JUNC(DIRTOA1);
+
+.ORG 0x88
+.ORG DIRTOA1
+    DC>AH,
+    DC>AL,
+    PCH>P,
+    Z>N,
+    PADDN,UCI,
+    O>PCH,
+    MR,MD>T,
+    JUNC(INDTOA0);
+
+// DIRTOA2 IS EQUATED TO INDTOA0
+// DIRTOA3 IS EQUATED TO RFTOA1
+
+.ORG 0x91
+.ORG DIRTOA4
+    DC>AH,
+    DC>AL,
+    MD>P,
+    Z>N,
+    PADDN,ZCI,
+    O>MAL,
+    IRL(LAFUN);
+
+// **** LONG INDEXED ADDRESSING MODE (TABLE(B))
+
+.ORG 0x55
+.ORG INDXTOA0
+    DC>AH,
+    DC>AL,
+    Z>P,
+    T>N,
+    PADDN,ZCI,
+    O>MAL,
+    JUNC(DIRTOA0);
+
+// INDXTOA1 IS EQUATED TO DIRTOA0
+// INDXTOA2 IS EQUATED TO DIRTOA1
+// INDXTOA3 IS EQUATED TO INDTOA0
+// INDXTOA4 IS EQUATED TO RFTOA1
+
+.ORG 0x95
+.ORG INDXTOA5
+    DC>AH,
+    MAL>AL,
+    AL>P,
+    MD>N,
+    PADDN,ZCI,
+    O>MAL,
+    JUNC(INDXTOA6);
+
+.ORG 0xE7
+.ORG INDXTOA6
+    DC>AH,
+    DC>AL,
+    Z>P,
+    T>N,
+    PADDN,UCI,
+    O>MD,MD>T,
+    IRL(LAFUN);
+
+// **** RELATIVE JUMP GROUP
+
+.ORG 0x5C
+.ORG RJMP0
+    PCH>AH,
+    P>AL,
+    PCL>P,
+    Z>N,
+    PADDN,ONECI,
+    O>PCL,
+    MCNT,MR,
+    MJMP(ITOA1,RJMP1);
+
+
+.ORG 0x9E
+.ORG RJMP1
+    DC>AH,
+    DC>AL,
+    PCH>P,
+    Z>N,
+    PADDN,UCI,
+    O>PCH,
+    MR,
+    MD>T,
+    JUNC(IAQ0);
+
+// RJMP2 IS EQUATED TO ITOA1
+
+.ORG 0x9C
+.ORG RJMP3
+    DC>AH,
+    DC>AL,
+    PCL>P,
+    MD>N,
+    PADDN,ZCI,
+    O>PCL,
+    JT7(RJMP5,RJMP4);
+
+.ORG 0x3E
+.ORG RJMP4
+    DC>AH,
+    DC>AL,
+    PCH>P,
+    Z>N,
+    PADDN,UCI,
+    O>PCH,
+    JUNC(IAQ0);
+
+.ORG 0x3F
+.ORG RJMP5
+    DC>AH,
+    DC>AL,
+    PCH>P,
+    Z>N,
+    PSUBN,UCI,
+    O>PCH,
+    JUNC(IAQ0);
+
+// **** MISCELLANEOUS INSTRUCTION GROUP STATE
+
+.ORG 0x41
+.ORG MISCGRP0
+    Z>AH,
+    SP>AL,
+    AL>P,
+    Z>N,
+    PSUBN,ZCI,
+    O>MAL,
+    MR,
+    IRL(MISCFUN);
+
+// **** TRAP GROUP A (FFFF-FFF8) (TRAP)
+
+.ORG 0x5F
+.ORG TGA0
+    DC>AH,
+    DC>AL,
+    Z>P,
+    IR>N,
+    PADDN,RLZ,
+    O>MAL,
+    JUNC(TGA1);
+
+// TRAP GROUPS B & C JOIN TRAP GROUP A AT TGA1
+
+.ORG 0xE9
+.ORG TGA1
+    DC>AH,
+    DC>AL,
+    Z>P,
+    Z>N,
+    PSUBN,ZCI,
+    O>MD,MD>T,
+    JUNC(TGA2);
+
+.ORG 0xEF
+.ORG TGA2
+    T>AH,
+    MAL>AL,
+    AL>P,
+    Z>N,
+    PSUBN,ZCI,
+    O>MAL,
+    MCNT, MR,
+    JUNC(TGA3);
+
+.ORG 0xED
+.ORG TGA3
+    DC>AH,
+    DC>AL,
+    DC>P,
+    DC>N,
+    DCALU,DCSHCI,
+    MR,
+    JUNC(TGA4);
+
+.ORG 0xE5
+.ORG TGA4
+    T>AH,
+    MAL>AL,
+    MD>P,
+    Z>N,
+    PADDN,ZCI,
+    O>MAL,
+    MCNT,MR,
+    JUNC(TGA5);
+
+.ORG 0xEE
+.ORG TGA5
+    DC>AH,
+    SP>AL,
+    AL>P,
+    Z>N,
+    PADDN,ONECI,
+    O>SP,
+    MR,MD>T,
+    JUNC(TGA6);
+
+// CALL FUNCTION JOINS TRAP AT TGA6
+
+.ORG 0xC
+.ORG TGA6
+    Z>AH,
+    SP>AL,
+    PCH>P,
+    Z>N,
+    PADDN,ZCI,
+    MW,
+    JUNC(TGA7);
+
+
+.ORG 0x4C
+.ORG TGA7
+    DC>AH,
+    SP>AL,
+    AL>P,
+    Z>N,
+    PADDN,ONECI,
+    O>SP,
+    JUNC(TGA8);
+
+.ORG 0x99
+.ORG TGA8
+    Z>AH,
+    SP>AL,
+    PCL>P,
+    Z>N,
+    PADDN,ZCI,
+    MW,
+    JUNC(JMPL0);
+
+// **** ADD FUNCTION FOR REGS FILE (ADD)
+
+.ORG 0x18
+.ORG ADD0
+    Z>AH,
+    MAL>AL,
+    MD>P,
+    T>N,
+    PADDN,ZCI,LST,
+    MW,
+    JUNC(IAQ0);
+
+// **** ADD WITH CARRY FUNCTION FOR REGS FILE (ADC)
+
+.ORG 0x19
+.ORG ADC0
+    Z>AH,
+    MAL>AL,
+    MD>P,
+    T>N,
+    PADDN,STCI,LST,
+    MW,
+    JUNC(IAQ0);
+
+// **** SUBTRACT FUNCTION FOR REGS FILE (SUB)
+
+.ORG 0x1A
+.ORG SUB0
+    Z>AH,
+    MAL>AL,
+    MD>P,
+    T>N,
+    PSUBN,ONECI,LST,
+    MW,
+    JUNC(IAQ0);
+
+// **** SUBTRACT WITH BORROW FUNCTION FOR REGS FILE (SBB)
+
+.ORG 0x1B
+.ORG SBB0
+    Z>AH,
+    MAL>AL,
+    MD>P,
+    T>N,
+    PSUBN,STCI,LST,
+    MW,
+    JUNC(IAQ0);
+
+// **** COMPARE FUNCTION FOR REGS FILE (CMP)
+
+.ORG 0x1D
+.ORG CMP0
+    DC>AH,
+    DC>AL,
+    MD>P,
+    T>N,
+    PSUBN,ONECI,LST,
+    JUNC(IAQ0);
+
+// **** STORE FUNCTION FOR REGS FILE (MOV)
+
+.ORG 0x12
+.ORG STO
+    Z>AH,
+    MAL>AL,
+    Z>P,
+    T>N,
+    PADDN,ZCI,LST,
+    MW,
+    JUNC(IAQ0);
+
+// **** AND FUNCTION FOR REGS FILE (AND)
+
+.ORG 0x13
+.ORG AND0
+    Z>AH,
+    MAL>AL,
+    MD>P,
+    T>N,
+    AND,ZCI,LST,
+    MW,
+    JUNC(IAQ0);
+
+// **** OR FUNCTION FOR REGS FILE (OR)
+
+.ORG 0x14
+.ORG OR0
+    Z>AH,
+    MAL>AL,
+    MD>P,
+    T>N,
+    OR,ZCI,LST,
+    MW,
+    JUNC(IAQ0);
+
+// **** XOR FUNCTION FOR REGS FILE (XOR)
+
+.ORG 0x15
+.ORG XOR0
+    Z>AH,
+    MAL>AL,
+    MD>P,
+    T>N,
+    XOR,ZCI,LST,
+    MW,
+    JUNC(IAQ0);
+
+// **** BIT TEST HIGH FUNCTION FOR REGS FILE (BTJO)
+
+.ORG 0x16
+.ORG BTH0
+    DC>AH,
+    DC>AL,
+    MD>P,
+    T>N,
+    AND,ZCI,LST,
+    JUNC(DRJN1);
+
+// **** BIT TEST LOW FUNCTION FOR REGS FILE (BTJZ)
+
+.ORG 0x17
+.ORG BTL0
+    DC>AH,
+    DC>AL,
+    MD>P,
+    T>N,
+    IPANDN,ZCI,LST,
+    JUNC(DRJN1);
+
+// **** PUSH SINGLE OPERAND FUNCTION
+
+.ORG 0x28
+.ORG PUSH0
+    DC>AH,
+    SP>AL,
+    AL>P,
+    Z>N,
+    PADDN,ONECI,
+    O>SP,
+    JUNC(PUSH1);
+
+.ORG 0x90
+.ORG PUSH1
+    Z>AH,
+    SP>AL,
+    Z>P,
+    T>N,
+    PADDN,ZCI,LST,
+    MW,
+    JUNC(IAQ0);
+
+// **** POP SINGLE OPERAND FUNCTION
+
+.ORG 0x29
+.ORG POP0
+    Z>AH,
+    SP>AL,
+    AL>P,
+    Z>N,
+    PSUBN,ZCI,
+    O>SP,
+    MR,MD>T,
+    JUNC(XCHB1);
+
+// **** DECREMENT REGISTER AND JUMP ON NOT ZERO (DJNZ)
+
+.ORG 0x2A
+.ORG DRJN0
+    Z>AH,
+    MAL>AL,
+    MD>P,
+    Z>N,
+    PSUBN,ZCI,
+    MW,
+    JUNC(DRJN1);
+
+.ORG 0x44
+.ORG DRJN1
+    PCH>AH,
+    P>AL,
+    PCL>P,
+    Z>N,
+    PADDN,ONECI,
+    O>PCL,
+    MCNT,MR,
+    JUZ(DRJN2,DRJN3);
+
+.ORG 0x8D
+.ORG DRJN2
+    DC>AH,
+    DC>AL,
+    PCH>P,
+    Z>N,
+    PADDN,UCI,
+    O>PCH,
+    MR,MD>T,
+    JUNC(IAQ0);
+
+.ORG 0x8C
+.ORG DRJN3
+    DC>AH,
+    DC>AL,
+    PCH>P,
+    Z>N,
+    PADDN,UCI,
+    O>PCH,
+    MR,MD>T,
+    JUNC(RJMP3);
+
+// **** ROTATE RIGHT CIRCULAR SINGLE OP FUNCTION (RR)
+
+.ORG 0x2C
+.ORG RR0
+    Z>AH,
+    MAL>AL,
+    MD>P,
+    Z>N,
+    PADDN,RRZ,LST,
+    MW,
+    JUNC(IAQ0);
+
+// **** ROTATE RIGHT THRU CARRY SINGLE OP FUNCTION (RRC)
+
+.ORG 0x2D
+.ORG RRC0
+    Z>AH,
+    MAL>AL,
+    MD>P,
+    Z>N,
+    PADDN,RRCZ,LST,
+    MW,
+    JUNC(IAQ0);
+
+// **** RETURN FROM INTERRUPT FUNCTION (RETI)
+
+.ORG 0x0B
+.ORG RETI0
+    DC>AH,
+    DC>AL,
+    MD>P,
+    Z>N,
+    PADDN,ZCI,
+    O>PCL,
+    JUNC(RETS1);
+
+// RETI1 IS EQUATED TO RETS1
+
+.ORG 0x3B
+.ORG RETI2
+    DC>AH,
+    DC>AL,
+    MD>P,
+    Z>N,
+    PADDN,ZCI,
+    O>PCH,
+    JUNC(POPST0);
+
+// **** STORE STACK POINTER INTO B REG (STSP)
+
+.ORG 0x09
+.ORG STSP0
+    DC>AH,
+    SP>AL,
+    AL>P,
+    Z>N,
+    PADDN,ZCI,
+    O>MD,
+    JUNC(STAL2);
+
+// **** LOAD STACK POINTER FROM B REG (LDSP)
+
+.ORG 0x0D
+.ORG LDSP0
+    DC>AH,
+    DC>AL,
+    Z>P,
+    T>N,
+    PADDN,ZCI,
+    O>SP,
+    JUNC(IAQ0);
+
+// **** LOAD STATUS FROM B REGISTER (NOT USED AS INSTRUCTION)
+
+.ORG 0xF
+.ORG LDST0
+    DC>AH,
+    DC>AL,
+    Z>P,
+    T>N,
+    PADDN,ZCI,
+    O>ST,
+    JUNC(IAQ0);
+
+// **** ENABLE INTERRUPT FUNCTION (EINT)
+
+.ORG 0x05
+.ORG EINT0
+    DC>AH,
+    DC>AL,
+    Z>P,
+    Z>N,
+    PSUBN,ZCI,
+    O>ST,
+    JUNC(IAQ0);
+
+// **** DISABLE INTERRUPT FUNCTION (DINT)
+
+.ORG 0x06
+.ORG DINT0
+    DC>AH,
+    DC>AL,
+    Z>P,
+    Z>N,
+    PADDN,ZCI,
+    O>ST,
+    JUNC(IAQ0);
+
+// **** IDLE FUNCTION (IDLE)
+
+.ORG 0x01
+.ORG IDLE0
+    DC>AH,
+    DC>AL,
+    PCL>P,
+    Z>N,
+    PSUBN,ZCI,
+    O>PCL,
+    JUNC(IDLE1);
+
+.ORG 0x38
+.ORG IDLE1
+    DC>AH,
+    DC>AL,
+    PCH>P,
+    Z>N,
+    PSUBN,UCI,
+    O>PCH,
+    JUNC(IAQ0);
+
+// **** SET CARRY FUNCTION (SETC)
+
+.ORG 0x07
+.ORG SETC0
+    DC>AH,
+    DC>AL,
+    Z>P,
+    Z>N,
+    PSUBN,ONECI,LST,
+    JUNC(IAQ0);
+
+// **** INTERRUPT ROUTINE, ENTERED FROM IAQ1
+
+.ORG 0xE1
+.ORG INT0
+    Z>AH,
+    Z>AL,
+    MD>P,
+    Z>N,
+    PSUBN,ZCI,
+    MCNT,INTVEC,
+    JUNC(INT1);
+
+.ORG 0x4E
+.ORG INT1
+    DC>AH,
+    SP>AL,
+    AL>P,
+    Z>N,
+    PADDN,ONECI,
+    O>SP,
+    INTVEC,MD>IR,
+    JUZ(INT4,INT2);
+
+.ORG 0x02
+.ORG INT2
+    DC>AH,
+    P>AL,
+    PCL>P,
+    Z>N,
+    PSUBN,ZCI,
+    O>PCL,
+    JUNC(INT3);
+
+.ORG 0x39
+.ORG INT3
+    DC>AH,
+    DC>AL,
+    PCH>P,
+    Z>N,
+    PSUBN,UCI,
+    O>PCH,
+    JUNC(INT4);
+
+.ORG 0x03
+.ORG INT4
+    Z>AH,
+    SP>AL,
+    Z>P,
+    ST>N,
+    PADDN,ZCI,
+    MW,
+    JUNC(INT5);
+
+.ORG 0x48
+.ORG INT5
+    DC>AH,
+    DC>AL,
+    Z>P,
+    Z>N,
+    PADDN,ZCI,
+    O>ST,
+    JUNC(TGA0);
+
+// **** RESET SEQUENCE
+
+.ORG 0xFF
+.ORG RESET0
+    DC>AH,
+    DC>AL,
+    DC>P,
+    DCALU,DCSHCI,
+    MR,
+    JUNC(RESET1);
+
+.ORG 0xE8
+.ORG RESET1
+    DC>AH,
+    DC>AL,
+    Z>P,
+    Z>N,
+    PSUBN,ZCI,
+    O>SP,
+    O>MD,MD>T,MD>IR,
+    JUNC(RESET2);
+
+.ORG 0xEC
+.ORG RESET2
+    ONE>AH,
+    Z>AL,
+    Z>P,
+    Z>N,
+    PADDN,ZCI,
+    O>ST,
+    MCNT,MW,
+    JUNC(RESET3);
+
+.ORG 0x32
+.ORG RESET3
+    DC>AH,
+    DC>AL,
+    Z>P,
+    Z>N,
+    PADDN,ZCI,
+    MW,
+    JUNC(TGA0);
+
+// **** NON-CORE ****
+
+// **** MULTIPLY FUNCTION FOR REG FILE (MPY)
+
+.ORG 0x1C
+.ORG MPY0
+    Z>AH,
+    ONE>AL,
+    MD>P,
+    Z>N,
+    PADDN,ZCI,
+    MW,
+    JUNC(MPY1);
+
+.ORG 0x04
+.ORG MPY1
+    DC>AH,
+    DC>AL,
+    PCL>P,
+    Z>N,
+    PADDN,ZCI,
+    O>MAL,
+    JUNC(MPY2);
+
+.ORG 0xE2
+.ORG MPY2
+    DC>AH,
+    DC>AL,
+    Z>P,
+    Z>N,
+    PADDN,ZCI,LST,
+    O>PCL,
+    O>MD,MD>IR,
+    JUNC(MPY3);
+
+.ORG 0xEA
+.ORG MPY3
+    Z>AH,
+    ONE>AL,
+    PCL>P,
+    Z>N,
+    PADDN,RRCZ,LST,
+    O>PCL,
+    MR,
+    JUNC(MPY4);
+
+.ORG 0x8A
+.ORG MPY4
+    Z>AH,
+    ONE>AL,
+    MD>P,
+    Z>N,
+    PADDN,RRCZ,LST,
+    MW,
+    JUNC(MPY5);
+
+.ORG 0x4A
+.ORG MPY5
+    DC>AH,
+    DC>AL,
+    Z>P,
+    IR>N,
+    PADDN,RLO,
+    O>MD,MD>IR,
+    JC(MPY6,MPY7);
+
+.ORG 0x35
+.ORG MPY6
+    DC>AH,
+    DC>AL,
+    PCL>P,
+    T>N,
+    PADDN,ZCI,LST,
+    O>PCL,
+    JUNC(MPY3);
+
+.ORG 0x34
+.ORG MPY7
+    Z>AH,
+    Z>AL,
+    PCL>P,
+    Z>N,
+    PADDN,ZCI,LST,
+    MW,
+    JUZ(JMPL1,MPY3);
+
+// **** MOVE DOUBLE FUNCTION (MOVD)
+
+.ORG 0xF8
+.ORG MOVD0
+    DC>AH,
+    MAL>AL,
+    AL>P,
+    Z>N,
+    PADDN,ZCI,
+    O>MD,MD>IR,
+    JUNC(MOVD1);
+
+.ORG 0x31
+.ORG MOVD1
+    PCH>AH,
+    P>AL,
+    PCL>P,
+    Z>N,
+    PADDN,ONECI,
+    O>PCL,
+    MCNT,MR,
+    JUNC(MOVD2);
+
+.ORG 0x33
+.ORG MOVD2
+    DC>AH,
+    DC>AL,
+    PCH>P,
+    Z>N,
+    PADDN,UCI,
+    O>PCH,
+    MR,
+    JUNC(MOVD3);
+
+.ORG 0x37
+.ORG MOVD3
+    DC>AH,
+    DC>AL,
+    MD>P,
+    Z>N,
+    PADDN,ZCI,
+    O>MAL,
+    JUNC(MOVD4);
+
+.ORG 0x10
+.ORG MOVD4
+    Z>AH,
+    MAL>AL,
+    Z>P,
+    IR>N,
+    PADDN,ZCI,
+    MW,
+    JUNC(MOVD5);
+
+.ORG 0x11
+.ORG MOVD5
+    DC>AH,
+    MAL>AL,
+    AL>P,
+    Z>N,
+    PSUBN,ZCI,
+    O>MAL,
+    JUNC(XCHB1);
+
+// **** DECREMENT DOUBLE REGISTER PAIR (DECD)
+
+.ORG 0x2B
+.ORG DECD0
+    Z>AH,
+    MAL>AL,
+    MD>P,
+    Z>N,
+    PSUBN,ZCI,LST,
+    MW,
+    JUNC(DECD1);
+
+.ORG 0x40
+.ORG DECD1
+    DC>AH,
+    DC>AL,
+    Z>P,
+    Z>N,
+    PADDN,ZCI,
+    O>MD,MD>T,
+    JUNC(DECD2);
+
+.ORG 0x42
+.ORG DECD2
+    DC>AH,
+    MAL>AL,
+    AL>P,
+    Z>N,
+    PSUBN,ZCI,
+    O>MD,
+    JUNC(ITORF4);
+
+// **** ROTATE LEFT CIRCULAR SINGLE OP FUNCTION
+
+.ORG 0x2E
+.ORG RL0
+    Z>AH,
+    MAL>AL,
+    MD>P,
+    Z>N,
+    PADDN,RLZ,LST,
+    MW,
+    JUNC(IAQ0);
+
+// **** ROTATE LEFT THRU CARRY SINGLE OP FUNCTION (RLC)
+
+.ORG 0x2F
+.ORG RLC0
+    Z>AH,
+    MAL>AL,
+    MD>P,
+    Z>N,
+    PADDN,RLCZ,LST,
+    MW,
+    JUNC(IAQ0);
+
+// **** STORE A (MOVE FROM A) FUNCTION FOR REGS FILE (MOV A,X)
+
+.ORG 0x20
+.ORG STA0
+    Z>AH,
+    Z>AL,
+    DC>P,
+    DC>N,
+    DCALU,DCSHCI,
+    MR,MD>T,
+    JUNC(STB0);
+
+// **** STORE B (MOVE FROM B) FUNCTION FOR REGS FILE (MOV B,X)
+
+.ORG 0x21
+.ORG STB0
+    Z>AH,
+    MAL>AL,
+    Z>P,
+    T>N,
+    PADDN,ZCI,LST,
+    MW,
+    JUNC(IAQ0);
+
+// **** DECREMENT SINGLE OPERAND FUNCTION (DEC)
+
+.ORG 0x22
+.ORG DEC0
+    Z>AH,
+    MAL>AL,
+    MD>P,
+    Z>N,
+    PSUBN,ZCI,LST,
+    MW,
+    JUNC(IAQ0);
+
+// **** INCREMENT SINGLE OPERAND FUNCTION (INC)
+
+.ORG 0x23
+.ORG INC0
+    Z>AH,
+    MAL>AL,
+    MD>P,
+    Z>N,
+    PADDN,ONECI,LST,
+    MW,
+    JUNC(IAQ0);
+
+// **** INVERT SINGLE OPERAND FUNCTION (INV)
+
+.ORG 0x24
+.ORG INV0
+    Z>AH,
+    MAL>AL,
+    MD>P,
+    DC>N,
+    INVP,ZCI,LST,
+    MW,
+    JUNC(IAQ0);
+
+// **** CLEAR SINGLE OPERAND FUNCTION (CLR)
+
+.ORG 0x25
+.ORG CLR0
+    Z>AH,
+    MAL>AL,
+    MD>P,
+    DC>N,
+    ZERO,ZCI,LST,
+    MW,
+    JUNC(IAQ0);
+
+.ORG 0x92
+.ORG XCHB1
+    Z>AH,
+    MAL>AL,
+    Z>P,
+    T>N,
+    PADDN,ZCI,LST,
+    MW,
+    JUNC(IAQ0);
+
+// **** LOAD A REG FROM LONG ADDRESSING MODE FUNCTION (LDA)
+
+.ORG 0xFA
+.ORG LDAL0
+    T>AH,
+    MAL>AL,
+    Z>P,
+    Z>N,
+    PADDN,ZCI,
+    O>MAL,
+    MCNT,MR,
+    JUNC(STA0);
+
+// **** STORE A REG TO LONG ADDRESSING MODE (STA)
+
+.ORG 0xFB
+.ORG STAL0
+    Z>AH,
+    Z>AL,
+    DC>P,
+    DC>N,
+    DCALU,DCSHCI,
+    MR,
+    JUNC(STAL1);
+
+.ORG 0x9D
+.ORG STAL1
+    T>AH,
+    MAL>AL,
+    MD>P,
+    Z>N,
+    PADDN,ZCI,LST,
+    MCNT,MW,
+    JUNC(STAL2);
+
+.ORG 0x8E
+.ORG STAL2
+    Z>AH,
+    ONE>AL,
+    MD>P,
+    Z>N,
+    PADDN,ZCI,
+    MW,
+    JUNC(IAQ0);
+
+// **** LONG JUMP FUNCTION (BR)
+
+.ORG 0xFC
+.ORG JMPL0
+    DC>AH,
+    DC>AL,
+    Z>P,
+    T>N,
+    PADDN,ZCI,
+    O>PCH,
+    JUNC(JMPL1);
+
+.ORG 0xEB
+.ORG JMPL1
+    DC>AH,
+    MAL>AL,
+    AL>P,
+    Z>N,
+    PADDN,ZCI,
+    O>PCL,
+    JUNC(IAQ0);
+
+// **** LONG CALL FUNCTION (CALL)
+
+.ORG 0xFE
+.ORG CALL0
+    DC>AH,
+    SP>AL,
+    AL>P,
+    Z>N,
+    PADDN,ONECI,
+    O>SP,
+    JUNC(TGA6);
+
+
+// **** POP STATUS FUNCTION (POPST)
+
+.ORG 0x08
+.ORG POPST0
+    Z>AH,
+    SP>AL,
+    AL>P,
+    Z>N,
+    PSUBN,ZCI,
+    O>SP,
+    MR,MD>T,
+    JUNC(LDST0);
+
+// **** PUSH STATUS FUNCTION (PUSHST)
+
+.ORG 0x0E
+.ORG PUSHST0
+    DC>AH,
+    SP>AL,
+    AL>P,
+    Z>N,
+    PADDN,ONECI,
+    O>SP,
+    JUNC(PUSHST1);
+
+.ORG 0x94
+.ORG PUSHST1
+    Z>AH,
+    SP>AL,
+    Z>P,
+    ST>N,
+    PADDN,ZCI,
+    MW,
+    JUNC(IAQ0);
+
+// **** RETURN FROM SUBROUTINE FUNCTION (RETS)
+
+.ORG 0x0A
+.ORG RETS0
+    DC>AH,
+    DC>AL,
+    MD>P,
+    Z>N,
+    PADDN,ZCI,
+    O>PCL,
+    JUNC(RETS1);
+
+.ORG 0x46
+.ORG RETS1
+    Z>AH,
+    MAL>AL,
+    AL>P,
+    Z>N,
+    PSUBN,ZCI,
+    O>SP,
+    MR,
+    IRL(SHRRET);
+
+.ORG 0x3A
+.ORG RETS2
+    DC>AH,
+    DC>AL,
+    MD>P,
+    Z>N,
+    PADDN,ZCI,
+    O>PCH,
+    JUNC(IAQ0);
+
+// **** DECIMAL ADD WITH CARRY FUNCTION FOR REGS FILE (DAC)
+
+.ORG 0x1E
+.ORG DAC0
+    Z>AH,
+    MAL>AL,
+    MD>P,
+    T>N,
+    PADDN,STCI,
+    MW,
+    JUNC(DAC1);
+
+.ORG 0x30
+.ORG DAC1
+    Z>AH,
+    MAL>AL,
+    DC>P,
+    DC>N,
+    PADDN,ZCI,
+    MR,
+    JUNC(DAC2);
+
+.ORG 0xE4
+.ORG DAC2
+    Z>AH,
+    MAL>AL,
+    MD>P,
+    BCD>N,
+    PADDN,ZCI,
+    LST,
+    MW,
+    JUNC(IAQ0);
+
+// **** DECIMAL SUBTRACT WITH BORROW FUNCTION FOR REGS FILE (DSB)
+
+.ORG 0x1F
+.ORG DSB0
+    Z>AH,
+    MAL>AL,
+    MD>P,
+    T>N,
+    PSUBN,STCI,
+    MW,
+    JUNC(DSB1);
+
+.ORG 0x3C
+.ORG DSB1
+    Z>AH,
+    MAL>AL,
+    DC>P,
+    DC>N,
+    PSUBN,ZCI,
+    MR,
+    JUNC(DSB2);
+
+.ORG 0xE6
+.ORG DSB2
+    Z>AH,
+    MAL>AL,
+    MD>P,
+    BCD>N,
+    PSUBN,ONECI,LST,
+    MW,
+    JUNC(IAQ0);
+
+// **** EXCHANGE B REG WITH DEST FUNCTION (XCHB)
+
+.ORG 0x26
+.ORG XCHB0
+    Z>AH,
+    ONE>AL,
+    MD>P,
+    Z>N,
+    PADDN,ZCI,
+    MW,
+    JUNC(XCHB1);
+
+// **** SWAP SINGLE OPERAND FUNCTION (SWAP)
+
+.ORG 0x27
+.ORG SWAP0
+    DC>AH,
+    DC>AL,
+    MD>P,
+    Z>N,
+    PADDN,RLZ,
+    O>MD,
+    JUNC(SWAP1);
+
+.ORG 0x96
+.ORG SWAP1
+    DC>AH,
+    DC>AL,
+    MD>P,
+    Z>N,
+    PADDN,RLZ,
+    O>MD,
+    JUNC(SWAP2);
+
+.ORG 0x98
+.ORG SWAP2
+    DC>AH,
+    DC>AL,
+    MD>P,
+    Z>N,
+    PADDN,RLZ,
+    O>MD,
+    JUNC(RL0);
+
+// **** TRAP GROUP C (FFEF-FFE7) TRAP 23 - TRAP 16
+
+.ORG 0x5D
+.ORG TGC0
+    DC>AH,
+    DC>AL,
+    Z>P,
+    IR>N,
+    PADDN,RLZ,
+    O>MAL,
+    JUNC(TGA1);
+
+// **** TRAP GROUP B (FFF7-FFF0) TRAP 8 - TRAP 15
+
+.ORG 0x5E
+.ORG TGB0
+    DC>AH,
+    DC>AL,
+    Z>P,
+    IR>N,
+    PADDN,RLZ,
+    O>MAL,
+    JUNC(TGA1);
+
+// **** A REGISTER ADDRESSING MODE FOR LOGICAL OPS
+
+.ORG 0x50
+.ORG ATOPPL0
+    Z>AH,
+    Z>AL,
+    DC>P,
+    DC>N,
+    DCALU,DCSHCI,
+    MR,MD>T,
+    JUNC(BTOPPL0);
+
+// ATOPPL1 IS EQUATED TO WITH BTOPPL0
+// ATOPPL2 IS EQUATED TO BTOPPL1
+// ATOPPL3 IS EQUATED TO BTOPPL2
+// ATOPPL4 IS EQUATED TO BTOPPL3
+
+// **** B REGISTER ADDRESSING MODE FOR LOGICAL OPS
+
+.ORG 0x52
+.ORG BTOPPL0
+    PCH>AH,
+    P>AL,
+    PCL>P,
+    Z>N,
+    PADDN,ONECI,
+    O>PCL,
+    MCNT,MR,
+    JUNC(BTOPPL1);
+
+.ORG 0x82
+.ORG BTOPPL1
+    DC>AH,
+    DC>AL,
+    PCH>P,
+    Z>N,
+    PADDN,UCI,
+    O>PCH,
+    MR,
+    JUNC(BTOPPL2);
+
+.ORG 0xE3
+.ORG BTOPPL2
+    ONE>AH,
+    P>AL,
+    MD>P,
+    Z>N,
+    PADDN,ZCI,
+    O>MAL,
+    MCNT,MR,
+    JUNC(BTOPPL3);
+
+.ORG 0x3D
+.ORG BTOPPL3
+    DC>AH,
+    DC>AL,
+    DC>P,
+    DC>N,
+    DCALU,DCSHCI,
+    MR,
+    IRL(DOPFUNP);
+
+// **** IMMEDIATE OPERAND ADDRESSING MODE FOR LOGICAL OPS
+
+.ORG 0x54
+.ORG ITOPPL0
+    PCH>AH,
+    P>AL,
+    PCL>P,
+    Z>N,
+    PADDN,ONECI,
+    O>PCL,
+    MCNT,MR,
+    JUNC(ITOPPL1);
+
+.ORG 0x80
+.ORG ITOPPL1
+    DC>AH,
+    DC>AL,
+    PCH>P,
+    Z>N,
+    PADDN,UCI,
+    O>PCH,
+    MR,MD>T,
+    JUNC(BTOPPL0);
+
+// ITOPPL2 IS EQUATED TO BTOPPL0
+// ITOPPL3 IS EQUATED TO BTOPPL1
+// ITOPPL4 IS EQUATED TO BTOPPL2
+// ITOPPL5 IS EQUATED TO BTOPPL3
+
+// **** LOAD A (MOVE TO A) FUNCTION FOR PER. PAGE (MOVP XX,A)
+
+.ORG 0xF0
+.ORG LDAP0
+    Z>AH,
+    Z>AL,
+    MD>P,
+    Z>N,
+    PADDN,ZCI,LST,
+    MW,
+    JUNC(IAQ0);
+
+// **** LOAD B (MOVE TO B) FUNCTION FOR PERIPHERAL PAGE (MOVP XX,B)
+
+.ORG 0xF1
+.ORG LDBP0
+    Z>AH,
+    ONE>AL,
+    MD>P,
+    Z>N,
+    PADDN,ZCI,LST,
+    MW,
+    JUNC(IAQ0);
+
+// **** STORE FUNCTION FOR PERIPHERAL PAGE (MOVP XX,PX)
+
+.ORG 0xF2
+.ORG STP0
+    ONE>AH,
+    MAL>AL,
+    Z>P,
+    T>N,
+    PADDN,ZCI,LST,
+    MCNT,MW,
+    JUNC(STAL2);
+
+// **** AND FUNCTION FOR PERIPHERAL PAGE (ANDP)
+
+.ORG 0xF3
+.ORG ANDP0
+    ONE>AH,
+    MAL>AL,
+    MD>P,
+    T>N,
+    AND,ZCI,LST,
+    MCNT,MW,
+    JUNC(STAL2);
+
+// **** OR FUNCTION FOR PERIPHERAL PAGE (ORP)
+
+.ORG 0xF4
+.ORG ORP0
+    ONE>AH,
+    MAL>AL,
+    MD>P,
+    T>N,
+    OR,ZCI,LST,
+    MCNT,MW,
+    JUNC(STAL2);
+
+// **** XOR FUNCTION FOR PERIPHERAL PAGE (XORP)
+
+.ORG 0xF5
+.ORG XORP0
+    ONE>AH,
+    MAL>AL,
+    MD>P,
+    T>N,
+    XOR,ZCI,LST,
+    MCNT,MW,
+    JUNC(STAL2);
+
+// **** BIT TEST HIGH FUNCTION FOR PERIPHERAL PAGE (BTJOP)
+
+.ORG 0xF6
+.ORG BTHP0
+    DC>AH,
+    DC>AL,
+    MD>P,
+    T>N,
+    AND,ZCI,LST,
+    JUNC(DRJN1);
+
+// **** BIT TEST LOW FUNCTION FOR PERIPHERAL PAGE (BTJZP)
+
+.ORG 0xF7
+.ORG BTLP0
+    DC>AH,
+    DC>AL,
+    MD>P,
+    T>N,
+    IPANDN,ZCI,LST,
+    JUNC(DRJN1);
+
+// **** COMPARE LONG TO A REG (A REG-LONG OPERAND) (CMPA)
+
+.ORG 0xFD
+.ORG CMPL0
+    T>AH,
+    MAL>AL,
+    DC>P,
+    DC>N,
+    DCALU,DCSHCI,
+    MCNT,MR,
+    JUNC(RFTOA2);
+
+// **** TEST SEQUENCE --NOT ACCESSIBLE BY REGULAR OP CODES--
+
+.ORG 0xF9
+.ORG TEST0
+    T>AH,
+    MAL>AL,
+    Z>P,
+    Z>N,
+    PADDN,RLO,
+    MD>IR,
+    MCNT,MR,
+    JUNC(ATOPPL0);
