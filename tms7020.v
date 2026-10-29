@@ -128,7 +128,7 @@ module tms7020 (
     );
 
     wire rom_sel = (pmc_mem_addr >= 16'hF800);           // 0xF800-0xFFFF
-    wire ext_sel = (pmc_mem_addr >= 16'h0200) && !rom_sel; // 0x0200-0xF7FF
+    wire ext_sel = (pmc_mem_addr >= 16'h010C) && !rom_sel; // 0x010C-0xF7FF
 
     assign rom_addr = rom_sel ? pmc_mem_addr[10:0] : 11'h00;
 

@@ -122,7 +122,7 @@ module pmc (
             int3_d <= 1'b0;
         end else begin
 
-            if (microcode_mem && !microcode_wr && bus_ah == 8'h01) begin
+            if (microcode_mem && !microcode_wr && bus_ah == 8'h01 && bus_al <= 8'h0B) begin
                 case (bus_al)
                     8'h00: bus_md_out <= reg_iocnt0;           // P0: IOCNT0
                     8'h01: bus_md_out <= 8'h00;                // P1: reserved
@@ -144,7 +144,7 @@ module pmc (
                 bus_md_out <= 8'h00;
             end
 
-            if (microcode_mem && microcode_wr && bus_ah == 8'h01) begin
+            if (microcode_mem && microcode_wr && bus_ah == 8'h01 && bus_al <= 8'h0B) begin
                 case (bus_al)
                     8'h00: begin
                         reg_iocnt0[7:6] <= bus_md_in[7:6];        // memory mode

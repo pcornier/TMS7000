@@ -1,5 +1,7 @@
 
-module cpu (
+module cpu #(
+    parameter [7:0] PF_TOP = 8'h0B
+) (
     input clk,
     input reset,
 
@@ -339,7 +341,7 @@ module cpu (
 
                 if (microcode_mem && !microcode_wr && h1_mem_addr < 16'h0080 && !prev_was_memcnt)
                     bus_md_reg <= register_file[h1_mem_addr[6:0]];
-                else if (microcode_mem && !microcode_wr && bus_ah == 8'h01)
+                else if (microcode_mem && !microcode_wr && bus_ah == 8'h01 && bus_al <= PF_TOP)
                     bus_md_reg <= bus_md_from_pmc;
 
                 else if (microcode_mem && !microcode_wr) begin
