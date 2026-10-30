@@ -59,6 +59,15 @@ module pmc7041 (
     reg [7:0] latched_addr_high;
     reg [7:0] latched_addr_low;
 
+    reg       int1_d, int3_d;
+
+    wire int1_en   = reg_iocnt0[0];
+    wire int2_en   = reg_iocnt0[2];
+    wire int3_en   = reg_iocnt0[4];
+    wire int1_flag = reg_iocnt0[1] | ~int1_in;
+    wire int2_flag = reg_iocnt0[3];
+    wire int3_flag = reg_iocnt0[5] | ~int3_in;
+
     always @(posedge clk) begin
         if (!reset) begin
             timer_clock_divider <= 4'h0;
@@ -171,6 +180,8 @@ module pmc7041 (
             reg_timer2_control <= 8'h00;
             reg_timer2_prescaler <= 5'h00;
             timer2_running <= 1'b0;
+            int1_d <= 1'b0;
+            int3_d <= 1'b0;
             reg_port_a <= 8'h00;
             reg_port_a_dir <= 8'h00;
             reg_port_b <= 8'h00;
@@ -186,7 +197,9 @@ module pmc7041 (
             a6_d <= port_a_in[6];
             if (microcode_mem && !microcode_wr && bus_ah == 8'h01 && bus_al <= 8'h17) begin
                 case (bus_al)
-                    8'h00: bus_md_out <= reg_iocnt0;
+                    8'h00: bus_md_out <= {reg_iocnt0[7:6], int3_flag, int3_en,
+                                          int2_flag, int2_en,
+                                          int1_flag, int1_en};
                     8'h01: bus_md_out <= 8'h00;
                     8'h02: bus_md_out <= reg_timer1_current;
                     8'h03: bus_md_out <= reg_timer1_control;
@@ -217,12 +230,12 @@ module pmc7041 (
                 case (bus_al)
                     8'h00: begin
                         reg_iocnt0[7:6] <= bus_md_in[7:6];
-                        reg_iocnt0[5] <= bus_md_in[5];
-                        if (bus_md_in[4]) reg_iocnt0[4] <= 1'b0;
-                        reg_iocnt0[3] <= bus_md_in[3];
-                        if (bus_md_in[2]) reg_iocnt0[2] <= 1'b0;
-                        reg_iocnt0[1] <= bus_md_in[1];
-                        if (bus_md_in[0]) reg_iocnt0[0] <= 1'b0;
+                        reg_iocnt0[4] <= bus_md_in[4];            // INT3 enable
+                        if (bus_md_in[5]) reg_iocnt0[5] <= 1'b0;  // INT3 flag clear
+                        reg_iocnt0[2] <= bus_md_in[2];            // INT2 enable
+                        if (bus_md_in[3]) reg_iocnt0[3] <= 1'b0;  // INT2 flag clear
+                        reg_iocnt0[0] <= bus_md_in[0];            // INT1 enable
+                        if (bus_md_in[1]) reg_iocnt0[1] <= 1'b0;  // INT1 flag clear
                     end
                     8'h02: begin
                         reg_timer1_data <= bus_md_in;
@@ -274,7 +287,7 @@ module pmc7041 (
                     reg_timer1_prescaler <= reg_timer1_control[4:0];
                     if (reg_timer1_current == 8'h00) begin
                         reg_timer1_current <= reg_timer1_data;
-                        reg_iocnt0 <= reg_iocnt0 | 8'h04;
+                        reg_iocnt0 <= reg_iocnt0 | 8'h08;  // INT2 flag (bit 3)
                     end else begin
                         reg_timer1_current <= reg_timer1_current - 1;
                     end
@@ -299,8 +312,18 @@ module pmc7041 (
                 end
             end
 
-            if (int1_in) reg_iocnt0[0] <= 1'b1;
-            if (int3_in) reg_iocnt0[4] <= 1'b1;
+            int1_d <= int1_in;
+            int3_d <= int3_in;
+
+            if (microcode_memcnt && !microcode_mem) begin
+                if (int1_flag && int1_en)      reg_iocnt0[1] <= 1'b0;
+                else if (int2_flag && int2_en) reg_iocnt0[3] <= 1'b0;
+                else if (int3_flag && int3_en) reg_iocnt0[5] <= 1'b0;
+                else if (reg_iocnt1[3] && reg_iocnt1[2]) reg_iocnt1[3] <= 1'b0;
+            end
+
+            if (!int1_in && int1_d) reg_iocnt0[1] <= 1'b1;   // INT1 flag (bit 1)
+            if (!int3_in && int3_d) reg_iocnt0[5] <= 1'b1;   // INT3 flag (bit 5)
 
             if (uart_int4) reg_iocnt1[1] <= 1'b1;
         end
@@ -308,15 +331,15 @@ module pmc7041 (
 
     always @(*) begin
         iact = reset && stint && (
-            (reg_iocnt0[0] && reg_iocnt0[1]) ||
-            (reg_iocnt0[2] && reg_iocnt0[3]) ||
-            (reg_iocnt0[4] && reg_iocnt0[5]) ||
+            (int1_flag && int1_en) ||
+            (int2_flag && int2_en) ||
+            (int3_flag && int3_en) ||
             (reg_iocnt1[1] && reg_iocnt1[0]) ||
             (reg_iocnt1[3] && reg_iocnt1[2])
         );
-        if      (reg_iocnt0[0] && reg_iocnt0[1]) int_vector = 8'hFE;
-        else if (reg_iocnt0[2] && reg_iocnt0[3]) int_vector = 8'hFD;
-        else if (reg_iocnt0[4] && reg_iocnt0[5]) int_vector = 8'hFC;
+        if      (int1_flag && int1_en) int_vector = 8'hFE;
+        else if (int2_flag && int2_en) int_vector = 8'hFD;
+        else if (int3_flag && int3_en) int_vector = 8'hFC;
         else if (reg_iocnt1[1] && reg_iocnt1[0]) int_vector = 8'hFB;
         else if (reg_iocnt1[3] && reg_iocnt1[2]) int_vector = 8'hFA;
         else                                     int_vector = 8'h00;

@@ -93,6 +93,13 @@ module pmc (
     reg [7:0] int_vector;
     reg int1_d, int3_d;
 
+    wire int1_en  = reg_iocnt0[0];
+    wire int2_en  = reg_iocnt0[2];
+    wire int3_en  = reg_iocnt0[4];
+    wire int1_flag = reg_iocnt0[1] | ~int1_in;
+    wire int2_flag = reg_iocnt0[3];
+    wire int3_flag = reg_iocnt0[5] | ~int3_in;
+
     reg [7:0] port_c_read, port_d_read;
     integer pbit;
     always @(*) begin
@@ -124,7 +131,9 @@ module pmc (
 
             if (microcode_mem && !microcode_wr && bus_ah == 8'h01 && bus_al <= 8'h0B) begin
                 case (bus_al)
-                    8'h00: bus_md_out <= reg_iocnt0;           // P0: IOCNT0
+                    8'h00: bus_md_out <= {reg_iocnt0[7:6], int3_flag, int3_en,
+                                          int2_flag, int2_en,
+                                          int1_flag, int1_en}; // P0: IOCNT0
                     8'h01: bus_md_out <= 8'h00;                // P1: reserved
                     8'h02: bus_md_out <= reg_timer1_current;   // P2: timer 1 data (read)
                     8'h03: bus_md_out <= reg_timer1_control;   // P3: timer 1 control
@@ -148,12 +157,12 @@ module pmc (
                 case (bus_al)
                     8'h00: begin
                         reg_iocnt0[7:6] <= bus_md_in[7:6];        // memory mode
-                        reg_iocnt0[5] <= bus_md_in[5];            // INT3 enable
-                        if (bus_md_in[4]) reg_iocnt0[4] <= 1'b0;  // INT3 clear
-                        reg_iocnt0[3] <= bus_md_in[3];            // INT2 enable
-                        if (bus_md_in[2]) reg_iocnt0[2] <= 1'b0;  // INT2 clear
-                        reg_iocnt0[1] <= bus_md_in[1];            // INT1 enable
-                        if (bus_md_in[0]) reg_iocnt0[0] <= 1'b0;  // INT1 clear
+                        reg_iocnt0[4] <= bus_md_in[4];            // INT3 enable
+                        if (bus_md_in[5]) reg_iocnt0[5] <= 1'b0;  // INT3 flag clear
+                        reg_iocnt0[2] <= bus_md_in[2];            // INT2 enable
+                        if (bus_md_in[3]) reg_iocnt0[3] <= 1'b0;  // INT2 flag clear
+                        reg_iocnt0[0] <= bus_md_in[0];            // INT1 enable
+                        if (bus_md_in[1]) reg_iocnt0[1] <= 1'b0;  // INT1 flag clear
                     end
                     8'h02: begin
                         reg_timer1_data <= bus_md_in;       // P2: timer 1 data
@@ -185,7 +194,7 @@ module pmc (
                     reg_timer1_prescaler <= reg_timer1_control[4:0];
                     if (reg_timer1_current == 8'h00) begin
                         reg_timer1_current <= reg_timer1_data;
-                        reg_iocnt0 <= reg_iocnt0 | 8'h04;
+                        reg_iocnt0 <= reg_iocnt0 | 8'h08;  // INT2 flag (bit 3)
                     end else begin
                         reg_timer1_current <= reg_timer1_current - 1;
                     end
@@ -196,22 +205,29 @@ module pmc (
 
             int1_d <= int1_in;
             int3_d <= int3_in;
-            if (int1_in && !int1_d) reg_iocnt0[0] <= 1'b1;   // INT1 FLAG (L1)
-            if (int3_in && !int3_d) reg_iocnt0[4] <= 1'b1;   // INT3 FLAG (L3)
+
+            if (microcode_memcnt && !microcode_mem) begin
+                if (int1_flag && int1_en)      reg_iocnt0[1] <= 1'b0;
+                else if (int2_flag && int2_en) reg_iocnt0[3] <= 1'b0;
+                else if (int3_flag && int3_en) reg_iocnt0[5] <= 1'b0;
+            end
+
+            if (!int1_in && int1_d) reg_iocnt0[1] <= 1'b1;   // INT1 flag (bit 1)
+            if (!int3_in && int3_d) reg_iocnt0[5] <= 1'b1;   // INT3 flag (bit 5)
         end
     end
 
     // generate IACT signal
     always @(*) begin
         iact = reset && stint && (
-            (reg_iocnt0[0] && reg_iocnt0[1]) ||  // INT1: FLAG=1 AND ENABLE=1
-            (reg_iocnt0[2] && reg_iocnt0[3]) ||  // INT2: FLAG=1 AND ENABLE=1
-            (reg_iocnt0[4] && reg_iocnt0[5])     // INT3: FLAG=1 AND ENABLE=1
+            (int1_flag && int1_en) ||  // INT1: FLAG=1 AND ENABLE=1
+            (int2_flag && int2_en) ||  // INT2: FLAG=1 AND ENABLE=1
+            (int3_flag && int3_en)     // INT3: FLAG=1 AND ENABLE=1
         );
-        if (reg_iocnt0[0] && reg_iocnt0[1])      int_vector = 8'hFE;
-        else if (reg_iocnt0[2] && reg_iocnt0[3]) int_vector = 8'hFD;
-        else if (reg_iocnt0[4] && reg_iocnt0[5]) int_vector = 8'hFC;
-        else                                     int_vector = 8'h00;
+        if (int1_flag && int1_en)      int_vector = 8'hFE;
+        else if (int2_flag && int2_en) int_vector = 8'hFD;
+        else if (int3_flag && int3_en) int_vector = 8'hFC;
+        else                           int_vector = 8'h00;
     end
 
     // generate OTMD signal
